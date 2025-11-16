@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
 # --- 0) Load environment ---
-load_dotenv("assignment_4/.env")  # reads .env in current working directory
+load_dotenv(".env.example")  # reads .env in current working directory
 
 MAN_DB_HOST = os.getenv("MAN_DB_HOST")
 MAN_DB_PORT = os.getenv("MAN_DB_PORT", "3306")
