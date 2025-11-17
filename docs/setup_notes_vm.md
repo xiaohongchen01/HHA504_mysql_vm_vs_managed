@@ -69,6 +69,8 @@
     * Create your .env file and fill out VM_DB_HOST, VM_DB_USER, VM_DB_PASS, VM_DB_NAME based on your instance
 
 6) Run vm_demo.py to create dataframe in your VM instance
+    * Create venv. and run pip install sqlalchemy pymysql pandas python-dotenv
+    * Next, run managed_demo.py
 ```
 import os, time
 from datetime import datetime
