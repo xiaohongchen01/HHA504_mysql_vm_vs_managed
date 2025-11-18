@@ -72,3 +72,7 @@ mysql+pymysql://xiao:*****@104.197.139.224:3306
 ![screenshots/managed/userredo.png](screenshots/managed/userredo.png)
 ![screenshots/managed/vscodecomplete.png](screenshots/managed/vscodecomplete.png)
 ![screenshots/managed/finalssh.png](screenshots/managed/finalssh.png)
+
+
+## Loom Recording
+[Brief Loom Recording of Repo](https://www.loom.com/share/6406a9af759f4ffcbe0680a54bdc8426)
