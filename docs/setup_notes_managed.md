@@ -63,6 +63,7 @@ MAN_DB_PASS=Dragon123!
 MAN_DB_NAME=assignmentdb
 ```
 
+
 7) Run managed_demo.py on VSCode to insert database
     * Create venv. and run pip install sqlalchemy pymysql pandas python-dotenv
     * Next, run managed_demo.py
@@ -134,11 +135,105 @@ MAN_DB_NAME=assignmentdb
     elapsed = time.time() - t0
     print(f"[DONE] Managed path completed in {elapsed:.1f}s at {datetime.utcnow().isoformat()}Z")
     ```
-    * I encountered the most trouble durring this part. MySQL was not conencting to query. I had to go into MySQL instance and Allow unencrypted network traffic. When I was doing it at home, it worked perfectly afterwards. As I am typing this at work and connected to the hospital wifi, I am not allowed to connect again. I tried my phone's hotspot as well and it still feeds back an error, unable to connect. I tried put my new IP address as an authorized network in MYSQL instance but I still get the same error. I will try again when I get home. 
+    * I encountered the most trouble durring this part. MySQL was not connecting to query. I had to go into MySQL instance and Allow unencrypted network traffic. When I was doing it at home, it worked perfectly afterwards. As I am typing this at work and connected to the hospital wifi, I am not allowed to connect again. I tried my phone's hotspot as well and it still feeds back an error, unable to connect. I tried put my new IP address as an authorized network in MYSQL instance but I still get the same error. 
+    * Finally, I had to erase my old/broken 'xiao' users and created a clean 'xiao' user that can log in from any IP
 
-######### insert photo when I get home
+    ```
+    CREATE DATABASE IF NOT EXISTS assignmentdb;
 
-8) Open Cloud Shell to view table
+    -- 3) Clean up any old/broken xiao users (safe even if they don't exist)
+    DROP USER IF EXISTS 'xiao'@'%';
+    DROP USER IF EXISTS 'xiao'@'localhost';
+    DROP USER IF EXISTS 'xiao'@'127.0.0.1';
+
+    -- 4) Create a clean app user that can log in from any IP
+    CREATE USER 'xiao'@'%' IDENTIFIED BY 'Dragon123!';
+
+    -- 5) Give that user full rights on your homework DB
+    GRANT ALL PRIVILEGES ON assignmentdb.* TO 'xiao'@'%';
+
+    -- 6) Apply changes
+    FLUSH PRIVILEGES;
+
+    -- 7) Sanity check: make sure the user is correct
+    SELECT user, host FROM mysql.user WHERE user = 'xiao';
+    ```
+    ![screenshots/managed/userredo.png](../screenshots/managed/userredo.png)
+
+8) Rerun managed_demo.py
+    * 
+    ```
+    import os, time
+    from datetime import datetime
+    import pandas as pd
+    from sqlalchemy import create_engine, text
+    from dotenv import load_dotenv
+
+    # --- 0) Load environment ---
+    load_dotenv(".env", override=True)  # reads .env in current working directory
+
+    MAN_DB_HOST = os.getenv("MAN_DB_HOST")
+    MAN_DB_PORT = os.getenv("MAN_DB_PORT", "3306")
+    MAN_DB_USER = os.getenv("MAN_DB_USER")
+    MAN_DB_PASS = os.getenv("MAN_DB_PASS")
+    MAN_DB_NAME = os.getenv("MAN_DB_NAME")
+
+    print("[ENV] MAN_DB_HOST:", MAN_DB_HOST)
+    print("[ENV] MAN_DB_PORT:", MAN_DB_PORT)
+    print("[ENV] MAN_DB_USER:", MAN_DB_USER)
+    print("[ENV] MAN_DB_NAME:", MAN_DB_NAME)
+
+    # --- 1) Connect to server (no DB) and ensure database exists ---
+    server_url = f"mysql+pymysql://{MAN_DB_USER}:{MAN_DB_PASS}@{MAN_DB_HOST}:{MAN_DB_PORT}"
+    print("[STEP 1] Connecting to MySQL server (no DB):", server_url.replace(MAN_DB_PASS, "*****"))
+    t0 = time.time()
+
+    # For managed MySQL, SSL is often required - adjust connect_args accordingly
+    engine_server = create_engine(
+        server_url, 
+        connect_args={"ssl": None},
+        pool_pre_ping=True
+    )
+    with engine_server.connect() as conn:
+        conn.execute(text(f"CREATE DATABASE IF NOT EXISTS `{MAN_DB_NAME}`"))
+        conn.commit()
+    print(f"[OK] Ensured database `{MAN_DB_NAME}` exists.")
+
+    # --- 2) Connect to the target database ---
+    db_url = f"mysql+pymysql://{MAN_DB_USER}:{MAN_DB_PASS}@{MAN_DB_HOST}:{MAN_DB_PORT}/{MAN_DB_NAME}"
+    engine = create_engine(
+        db_url,
+        connect_args={"ssl": None}
+    )
+
+    # --- 3) Create a DataFrame and write to a table ---
+    table_name = "visits"
+    df = pd.DataFrame(
+        [
+            {"patient_id": 1, "visit_date": "2025-09-01", "bp_sys": 118, "bp_dia": 76},
+            {"patient_id": 2, "visit_date": "2025-09-02", "bp_sys": 130, "bp_dia": 85},
+            {"patient_id": 3, "visit_date": "2025-09-03", "bp_sys": 121, "bp_dia": 79},
+            {"patient_id": 4, "visit_date": "2025-09-04", "bp_sys": 110, "bp_dia": 70},
+            {"patient_id": 5, "visit_date": "2025-09-05", "bp_sys": 125, "bp_dia": 82},
+        ]
+    )
+
+    # Remove connect_args from to_sql() - it's already in the engine
+    df.to_sql(table_name, con=engine, if_exists="replace", index=False)
+
+    # --- 4) Read back a quick check ---
+    print("[STEP 4] Reading back row count ...")
+    with engine.connect() as conn:
+        count_df = pd.read_sql(f"SELECT COUNT(*) AS n_rows FROM `{table_name}`", con=conn)
+    print(count_df)
+
+    elapsed = time.time() - t0
+    print(f"[DONE] Managed path completed in {elapsed:.1f}s at {datetime.utcnow().isoformat()}Z")
+    ```
+    ![screenshots/managed/vscodecomplete.png](../screenshots/managed/vscodecomplete.png)
+
+
+9) Open Cloud Shell to view table
     ```
     gcloud sql connect assignment4 --user=root --quiet
     ```
