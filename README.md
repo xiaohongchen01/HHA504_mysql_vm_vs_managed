@@ -62,7 +62,7 @@ mysql+pymysql://xiao:*****@104.197.139.224:3306
 
 
 
-### Managed Cloud MySQL
+### Managed Cloud MySQL Screenshots
 
 ![screenshots/managed/1.png](screenshots/managed/1.png)
 ![screenshots/managed/addIP.png](screenshots/managed/addIP.png)
